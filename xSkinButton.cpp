@@ -42,6 +42,7 @@ CxSkinButton::CxSkinButton()
 	m_button_down = m_tracking = m_Checked = false;
 	m_hIcon1 = NULL;
 	m_hIcon2 = NULL;
+	m_bReverseColor = false;
 }
 /////////////////////////////////////////////////////////////////////////////
 CxSkinButton::~CxSkinButton()
@@ -176,11 +177,21 @@ void CxSkinButton::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		//	pDC->SetTextColor(RGB(242, 152, 50));
 		//else
 
-		if (bHover)
-			pDC->SetTextColor(RGB(242, 152, 50));
+		if (m_bReverseColor)
+		{
+			if (bHover)
+				pDC->SetTextColor(m_TextColor);
+			else
+				pDC->SetTextColor(RGB(242, 152, 50));
+		}
 		else
-			pDC->SetTextColor(m_TextColor);
-
+		{
+			if (bHover)
+				pDC->SetTextColor(RGB(242, 152, 50));
+			else
+				pDC->SetTextColor(m_TextColor);
+		}
+		
 		// paint the focus rect
 		if ((lpDrawItemStruct->itemState & ODS_FOCUS)&&(m_FocusRectMargin>0)){
 			r.left   += m_FocusRectMargin ;
@@ -322,7 +333,7 @@ void CxSkinButton::SetSkin(HBITMAP normal, HBITMAP down, HBITMAP over, UINT disa
 ///////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////
-void CxSkinButton::SetSkin(UINT normal,UINT down,UINT over,UINT disabled, UINT focus,UINT mask, short drawmode, short border, short margin)
+void CxSkinButton::SetSkin(UINT normal,UINT down,UINT over,UINT disabled, UINT focus,UINT mask, short drawmode, short border, short margin, bool bReverseColor)
 {
 	m_bNormal.DeleteObject();	//free previous allocated bitmap
 	m_bDown.DeleteObject();
@@ -338,6 +349,8 @@ void CxSkinButton::SetSkin(UINT normal,UINT down,UINT over,UINT disabled, UINT f
 
 	if (disabled>0) m_bDisabled.LoadBitmap(disabled);
 	else if (normal>0) m_bDisabled.LoadBitmap(normal);
+
+	m_bReverseColor = bReverseColor;
 
 	m_DrawMode=max(0,min(drawmode,2));
 	m_Border=border;

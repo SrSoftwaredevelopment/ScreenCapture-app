@@ -5,6 +5,7 @@
 #include "framework.h"
 #include "TicketEasy.h"
 #include "TicketEasyDlg.h"
+#include "DlgMsg.h"
 #include <time.h>
 #include <locale.h>
 #include <algorithm>
@@ -28,16 +29,17 @@ void CTicketEasyDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BUTTON_SUBMIT,		m_btnSubmit);
 	DDX_Control(pDX, IDC_EDIT_CONTENT,		m_edtCont);
 	DDX_Control(pDX, IDC_EDIT_TITLE,		m_edtTitle);
-	DDX_Control(pDX, IDC_STATIC_STARTTIME,	m_lblStart);
-	DDX_Control(pDX, IDC_STATIC_ENDTIME,	m_lblEnd);
 }	
 
 BEGIN_MESSAGE_MAP(CTicketEasyDlg, CDialog)
 	ON_WM_CTLCOLOR()
 	ON_WM_DESTROY()
+	ON_WM_ERASEBKGND()
 	ON_WM_GETMINMAXINFO()
+	ON_WM_MOUSEMOVE()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_WM_SETCURSOR()
 	ON_WM_SIZE()
 	ON_WM_SYSCOMMAND()
 	ON_BN_CLICKED(IDC_BUTTON_CLOSE,			OnBnClickedButtonClose)
@@ -74,21 +76,22 @@ BOOL CTicketEasyDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
-#ifdef _DEBUGX
+#ifdef MODAL
 	InitAnchors(ANIF_CALCSIZE);
 	Initialize();
-	//ShowWindow(SW_MAXIMIZE);
+	ShowWindow(SW_MAXIMIZE);
 #else
 	ModifyStyleEx(WS_EX_APPWINDOW, 0);
 	InitAnchors(ANIF_CALCSIZE);
 	Initialize();
+	ShowWindow(SW_MAXIMIZE);
 
 	m_hook.InstallHook(m_hWnd);
 
-	SetParent(GetDesktopWindow());
-	CRect rect;
-	GetDesktopWindow()->GetWindowRect(&rect);
-	SetWindowPos(&wndTopMost, rect.left, rect.top, rect.right, rect.bottom, SWP_SHOWWINDOW);
+	//SetParent(GetDesktopWindow());
+	//CRect rect;
+	//GetDesktopWindow()->GetWindowRect(&rect);
+	//SetWindowPos(&wndTopMost, rect.left, rect.top, rect.right, rect.bottom, SWP_SHOWWINDOW);
 
 	PostMessage(WM_HIDEWINDOW);
 #endif
@@ -192,8 +195,14 @@ BOOL CTicketEasyDlg::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
 	{
-		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
+		if (pMsg->wParam == VK_ESCAPE)
 			return TRUE;
+		if (pMsg->wParam == VK_RETURN)
+		{
+			CWnd * pWnd = GetDlgItem(IDC_EDIT_CONTENT);
+			if (pMsg->hwnd != pWnd->GetSafeHwnd())
+				return TRUE;
+		}
 	}
 
 	return CDialog::PreTranslateMessage(pMsg);
@@ -220,16 +229,14 @@ void CTicketEasyDlg::RelayoutCapturePanels()
 		return;
 
 	CRect rt;
-	pWnd->GetWindowRect(&rt);
-	ScreenToClient(&rt);
+	pWnd->GetClientRect(&rt);
 
 	int w = (rt.Width() - 21) / CAPTURECOUNT;
 	int h = rt.Height() - 17;
 
 	for (int i = 0; i < CAPTURECOUNT; i++)
 	{
-		pWnd->GetWindowRect(&rt);
-		ScreenToClient(&rt);
+		pWnd->GetClientRect(&rt);
 
 		rt.left = rt.left + m_nX * (i + 1) + (i * w) + 2;
 		rt.right = rt.left + w;
@@ -281,12 +288,6 @@ void CTicketEasyDlg::Initialize()
 	strImgFile.Format(_T("%sResources\\exit.png"), theApp.m_strAppDir);
 	m_imgButtons[1].Load((LPCTSTR)strImgFile, CXIMAGE_FORMAT_PNG);
 
-	strImgFile.Format(_T("%sResources\\drawEmptySquare.png"), theApp.m_strAppDir);
-	m_imgButtons[2].Load((LPCTSTR)strImgFile, CXIMAGE_FORMAT_PNG);
-
-	strImgFile.Format(_T("%sResources\\drawEmptySquare_hover.png"), theApp.m_strAppDir);
-	m_imgButtons[3].Load((LPCTSTR)strImgFile, CXIMAGE_FORMAT_PNG);
-
 	// Create the tray icon
 	CString strTitle;
 	strTitle.LoadString(IDS_STRING_TITLE);
@@ -294,8 +295,8 @@ void CTicketEasyDlg::Initialize()
 
 	GetDlgItem(IDC_STATIC_OLD)->SetFont(&m_midFont);
 	GetDlgItem(IDC_STATIC_NEW)->SetFont(&m_midFont);
-	m_lblStart.SetFont(&m_smallFont);
-	m_lblEnd.SetFont(&m_smallFont);
+	GetDlgItem(IDC_STATIC_STARTTIME)->SetFont(&m_smallFont);
+	GetDlgItem(IDC_STATIC_ENDTIME)->SetFont(&m_smallFont);
 
 	m_btnSubmit.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_HOVER, IDB_BITMAP_HOVER, 0, 0, 0, 1, 0, 0);
 	m_btnSubmit.SetToolTipText("Submit"); 
@@ -303,27 +304,30 @@ void CTicketEasyDlg::Initialize()
 
 	HBITMAP hBmpN = m_imgButtons[0].MakeBitmap(NULL, true);
 	HBITMAP hBmpH = m_imgButtons[1].MakeBitmap(NULL, true);
-	m_btnClose.SetSkin(hBmpN, hBmpH, hBmpH, 0, 0, 0, 1, 0, 0);
+	m_btnClose.SetSkin(hBmpH, hBmpN, hBmpN, 0, 0, 0, 1, 0, 0);
 	m_btnClose.SetToolTipText("Close");
-	m_btnClose.SetFont(&m_bigFont);
+	m_btnClose.SetFont(&m_bigFont); 
 
-	m_edtTitle.SetDimText(" Please give your ticket a title");
-	m_edtTitle.SetDimColor(RGB(128, 128, 128));
-	m_edtTitle.LimitText(128);
+	m_edtTitle.SetPromptShowMode(pmGray);
+	m_edtTitle.SetPromptText("Please give your ticket a title");
 	m_edtTitle.SetFont(&m_midFont);
 
-	m_edtCont.SetDimText(" Let us know what the issue is");
-	m_edtCont.SetDimColor(RGB(128, 128, 128));
-	m_edtCont.LimitText(4096);
+	m_edtCont.SetPromptShowMode(pmGray);
+	m_edtCont.SetPromptText("Let us know what the issue is");
 	m_edtCont.SetFont(&m_midFont);
 
-	HBITMAP hBmpLog = m_imgLogo.MakeBitmap();
+	CWnd * pChildView = GetDlgItem(IDC_STATIC_IMGPANEL);
+
+	strImgFile.Format(_T("%sResources\\Logo.png"), theApp.m_strAppDir);
 	for (int i = 0; i < CAPTURECOUNT; i++)
 	{
-		m_imgPanel[i].CreateFromStatic(GetDlgItem(IDC_STATIC_IMG1 + i));
-		m_imgPanel[i].SetImg(hBmpLog);
-		m_imgPanel[i].SetAlign(bltCenter, bltCenter);
+		m_imgPanel[i].Create(IDD_DIALOG_THUMB, pChildView);
+		m_imgPanel[i].ShowWindow(SW_SHOW);
+		m_imgPanel[i].SetImage((LPCTSTR)strImgFile, bltCenter);
 	}
+
+	m_dwProcId = 0xFFFFFFFF;
+	GetWindowThreadProcessId(m_hWnd, &m_dwProcId);
 
 	ArrangeScreenshots();
 }
@@ -340,30 +344,25 @@ void CTicketEasyDlg::OnPopupExit()
 
 void CTicketEasyDlg::OnBnClickedButtonClose()
 {
-#ifdef _DEBUGX
+#ifdef MODAL
 	OnCancel();
 #else
 	ShowWindow(SW_HIDE);
 #endif
 }
 
-void CTicketEasyDlg::OnBnClickedButtonSubmit()
-{
-	DoScreenCapture();
-}
-
 void CTicketEasyDlg::OnDestroy()
 {
 	CDialog::OnDestroy();
 
-#ifdef _DEBUG
+#ifndef _DEBUG
 	m_hook.UninstallHook();
 #endif
 }
 
 void CTicketEasyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-#ifdef _DEBUG
+#ifndef _DEBUG
 	if (nID == SC_CLOSE || nID == SC_MINIMIZE)
 	{
 		ShowWindow(SW_HIDE);
@@ -385,6 +384,7 @@ LRESULT CTicketEasyDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 	if (message == WM_USER_KEYBDHOOK)
 	{
 		ShowWindow(SW_SHOW);
+		SetForegroundWindow();
 		SetActiveWindow();
 		BringWindowToTop();
 		return TRUE;
@@ -411,7 +411,7 @@ HBRUSH CTicketEasyDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
 
 	int nId = pWnd->GetDlgCtrlID();
-	if (nId == IDC_STATIC_OLD || nId == IDC_STATIC_NEW || nId == IDC_STATIC_IMGPANEL || nId == IDC_STATIC_ARROW)
+	if (nId == IDC_STATIC_OLD || nId == IDC_STATIC_NEW || nId == IDC_STATIC_IMGPANEL || nId == IDC_STATIC_ARROW || nId == IDC_STATIC_STARTTIME || nId == IDC_STATIC_ENDTIME)
 	{
 		hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
 		pDC->SetBkMode(TRANSPARENT);
@@ -528,29 +528,33 @@ void CTicketEasyDlg::DoScreenCapture()
 
 	LONG lTotalSec = tmSpan.GetTotalSeconds();
 
-	HDC hdc = ::GetWindowDC(hWnd);
+	CString strFile, strThum;
+	strFile.Format("%s\\Capture_%u.jpg", theApp.m_strUsrDir, lTotalSec);
+	strThum.Format("%s\\Thum_%u.jpg", theApp.m_strUsrDir, lTotalSec);
 
-	CDC dc;
+ 	HDC hdc = ::GetWindowDC(hWnd);
+ 
+ 	CDC dc;
 	dc.Attach(hdc);
+ 
+ 	CDC memDC;
+ 	memDC.CreateCompatibleDC(&dc);
+ 
+ 	CRect r;
+ 	::GetWindowRect(hWnd, &r);
 
-	CDC memDC;
-	memDC.CreateCompatibleDC(&dc);
-
-	CRect r;
-	::GetWindowRect(hWnd, &r);
-
-	CBitmap bm;
+ 	CBitmap bm;
 	bm.CreateCompatibleBitmap(&dc, r.Width(), r.Height());
 
 	CBitmap * oldbm = memDC.SelectObject(&bm);
 	memDC.BitBlt(0, 0, r.Width(), r.Height(), &dc, 0, 0, SRCCOPY);
 
-	CString strFile;
-	strFile.Format("%s\\Capture_%u.jpg", theApp.m_strUsrDir, lTotalSec);
-
 	m_imgCapt.CreateFromHBITMAP((HBITMAP)bm.m_hObject);
-	m_imgCapt.SetJpegQuality(255);
+	m_imgCapt.SetJpegQuality(50);
 	m_imgCapt.Save(strFile, CXIMAGE_FORMAT_JPG);
+
+	m_imgCapt.Resample2(r.Width() / 5, r.Height() / 5);
+	m_imgCapt.Save(strThum, CXIMAGE_FORMAT_JPG);
 	m_imgCapt.Destroy();
 
 	memDC.SelectObject(oldbm);
@@ -560,7 +564,7 @@ void CTicketEasyDlg::DoScreenCapture()
 	dc.Detach();
 	dc.DeleteDC();
 
-	::ReleaseDC(hWnd, hdc);
+	::ReleaseDC(hWnd, hdc); 
 
 	PostMessage(WM_USER_SENDCAPTURE);
 }
@@ -584,7 +588,7 @@ BOOL CTicketEasyDlg::IsExistScreenshot(LONG lCaptTime)
 
 void CTicketEasyDlg::ArrangeScreenshots()
 {
-	CString strFile;
+	CString strFile, strThum;
 	strFile.Format("%s\\*.jpg", theApp.m_strUsrDir);
 
 	CFileFind finder;
@@ -628,7 +632,10 @@ void CTicketEasyDlg::ArrangeScreenshots()
 		{
 			LONG lTime = m_vCaptures.at(i);
 			strFile.Format("%s\\Capture_%u.jpg", theApp.m_strUsrDir, lTime);
+			strThum.Format("%s\\Thum_%u.jpg", theApp.m_strUsrDir, lTime);
+
 			DeleteFile((LPCTSTR)strFile);
+			DeleteFile((LPCTSTR)strThum);
 		}
 
 		m_vCaptures.erase(m_vCaptures.begin(), m_vCaptures.begin() + nDiff);
@@ -640,16 +647,14 @@ void CTicketEasyDlg::ArrangeScreenshots()
 		if (i < nCount)
 		{
 			LONG lTime = m_vCaptures.at(i);
-			strFile.Format("%s\\Capture_%u.jpg", theApp.m_strUsrDir, lTime);
-			m_imgCapt.Load(strFile, CXIMAGE_FORMAT_JPG);
-			m_imgPanel[i].SetImg(m_imgCapt.MakeBitmap());
-			m_imgPanel[i].SetBltMode(bltStretch);
+			//strFile.Format("%s\\Capture_%u.jpg", theApp.m_strUsrDir, lTime);
+			strFile.Format("%s\\Thum_%u.jpg", theApp.m_strUsrDir, lTime);
+			m_imgPanel[i].SetImage((LPCTSTR)strFile, bltStretch);
 		}
 		else
 		{
-			HBITMAP hBmpLog = m_imgLogo.MakeBitmap();
-			m_imgPanel[i].SetImg(hBmpLog);
-			m_imgPanel[i].SetAlign(bltCenter, bltCenter);
+			strFile.Format(_T("%sResources\\Logo.png"), theApp.m_strAppDir);
+			m_imgPanel[i].SetImage((LPCTSTR)strFile, bltCenter);
 		}
 	}
 
@@ -665,10 +670,42 @@ void CTicketEasyDlg::ArrangeScreenshots()
 
 	CString strTime;
 	strTime.Format("%d:%02d:%02d", tmStart.GetHour(), tmStart.GetMinute(), tmStart.GetSecond());
-	m_lblStart.SetWindowText((LPCTSTR)strTime);
+	GetDlgItem(IDC_STATIC_STARTTIME)->SetWindowText((LPCTSTR)strTime);
 
 	strTime.Format("%d:%02d:%02d", tmEnd.GetHour(), tmEnd.GetMinute(), tmEnd.GetSecond());
-	m_lblEnd.SetWindowText((LPCTSTR)strTime);
+	GetDlgItem(IDC_STATIC_ENDTIME)->SetWindowText((LPCTSTR)strTime);
+
+	Invalidate();
+}
+
+BOOL CTicketEasyDlg::OnEraseBkgnd(CDC* pDC)
+{
+	return TRUE;
 }
 
 
+BOOL CTicketEasyDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	//SetCursor(AfxGetApp()->LoadCursor(IDC_CURSOR_BUTTON));
+	SetCursor(AfxGetApp()->LoadStandardCursor(IDC_ARROW));
+	return TRUE;
+}
+
+void CTicketEasyDlg::OnMouseMove(UINT nFlags, CPoint point)
+{
+	POINT p2 = point;
+	::ClientToScreen(m_hWnd, &p2);
+	HWND mouse_wnd = ::WindowFromPoint(p2);
+	if (mouse_wnd == m_hWnd)
+	{
+		for (int i = 0; i < CAPTURECOUNT; i++)
+			m_imgPanel[i].ShowButtons(FALSE);
+	}
+
+	CDialog::OnMouseMove(nFlags, point);
+}
+
+void CTicketEasyDlg::OnBnClickedButtonSubmit()
+{
+
+}

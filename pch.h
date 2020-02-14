@@ -9,5 +9,13 @@
 
 // add headers that you want to pre-compile here
 #include "framework.h"
+#include <afxwin.h>
+#include <afxwin.h>
+
+#include <gdiplus.h>
+#include <afxwin.h>
+#pragma comment(lib, "gdiplus.lib")
+
+using namespace Gdiplus;
 
 #endif //PCH_H

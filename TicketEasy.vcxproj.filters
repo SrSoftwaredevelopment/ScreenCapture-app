@@ -36,19 +36,37 @@
     <ClInclude Include="SystemTray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="xSkinButton.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TicketHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TransparentStatic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DimEditCtrl.h">
+    <ClInclude Include="WndImage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WndImage.h">
+    <ClInclude Include="DlgThumb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="xSkinButton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgMsg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CDialogSK.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GdipButton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DlgImgEdit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PromptEdit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -65,19 +83,37 @@
     <ClCompile Include="SystemTray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="xSkinButton.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TicketHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TransparentStatic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DimEditCtrl.cpp">
+    <ClCompile Include="WndImage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="WndImage.cpp">
+    <ClCompile Include="DlgThumb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="xSkinButton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgMsg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDialogSK.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GdipButton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DlgImgEdit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PromptEdit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MyTracker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -88,6 +124,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="res\TicketEasy.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\aero_link_im.cur">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
@@ -105,6 +144,39 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="res\bitmap_c.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\bitmap_n.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\bitmap_h.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\msgbk.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\exit.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\blur.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\blurHover.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\crop.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\cropHover.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\exit_hover.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\help.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\help_hover.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

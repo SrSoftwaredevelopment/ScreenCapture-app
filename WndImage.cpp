@@ -28,32 +28,26 @@ static char THIS_FILE[] = __FILE__;
 
 CWndImage::CWndImage()
 {
-  m_shared = false;
-  m_bmpSize = CSize(0,0);
-  m_bltMode = bltNormal;
-  m_alignX = bltLeft;
-  m_alignY = bltTop;
-  m_srcRect.SetRectEmpty();
-  m_dstRect.SetRectEmpty();
-
-  m_zoomX   = 1.0;
-  m_zoomY   = 1.0;
-  m_origin.x = 0;
-  m_origin.y = 0;
-
-  m_backBrush = CreateSolidBrush(RGB(0, 0, 0));
+	m_bltMode = bltBlt;
+	m_nDrawMode = DRAWUNDO;
+	m_tracker.m_rect = CRect(0, 0, 0, 0);
+	m_tracker.m_nStyle = CRectTracker::resizeOutside | CRectTracker::dottedLine;
+	m_tracker.m_rect.SetRect(-1, -2, -3, -4);
+	m_tracker.SetRectColor(RGB(255, 0, 0));
 }
-
 
 CWndImage::~CWndImage()
 {
-  SetImg((HBITMAP) 0);
+
 }
 
 
 BEGIN_MESSAGE_MAP(CWndImage, CWnd)
 	//{{AFX_MSG_MAP(CWndImage)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
 	ON_WM_PAINT()
+	ON_WM_SETCURSOR()
 	ON_WM_SIZE()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -65,389 +59,216 @@ END_MESSAGE_MAP()
 
 void CWndImage::OnPaint() 
 {
-  DWORD style = GetStyle();
-  if (!(style & WS_VISIBLE)) return;
+	DWORD style = GetStyle();
+	if (!(style & WS_VISIBLE))
+		return;
 
-  CPaintDC dc(this); 
-  CRect r;
-  GetClientRect(&r);
+	CPaintDC dc(this);
 
-  CDC memdc;
-  memdc.CreateCompatibleDC( &dc );
-  CBitmap * prev = memdc.SelectObject(&m_bmp);
+	if (m_bltMode == bltStretch)
+	{
+		CRect r;
+		GetClientRect(&r);
+		dc.FillSolidRect(&r, RGB(46, 46, 46));
+		m_imgBk.Draw(dc.GetSafeHdc(), r);
+	}
+	else  if (m_bltMode == bltCenter)
+	{
+		CRect r;
+		GetClientRect(&r);
+		dc.FillSolidRect(&r, RGB(46, 46, 46));
 
-  dc.SetStretchBltMode(HALFTONE);  // works only under NT/2000, anyway..
+		int w = m_imgBk.GetWidth();
+		int h = m_imgBk.GetHeight();
+		int x = r.left + (r.Width() - w) / 2;
+		int y = r.top + (r.Height() - h) / 2;
 
-  CRect & src = m_srcRect;
-  CRect & dst = m_dstRect;
-
-  if (m_bltMode == bltTile) 
-  {
-    if (!src.IsRectEmpty()) {
-      for(int x=m_origin.x; x < r.right; x+=src.Width()) {
-        if (x>-r.right) {
-          for(int y=m_origin.y; y<r.bottom; y+=src.right) {
-            if (y>-r.bottom) {
-              dc.BitBlt(x, y, src.Width(), src.Height(), &memdc, src.left, src.top, 
-                        SRCCOPY);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  else {
-    dc.StretchBlt(dst.left, dst.top, dst.Width(), dst.Height(),
-                  &memdc, 
-                  src.left, src.top, src.Width(), src.Height(),
-                  SRCCOPY);
-
-      // clean background
-    CRect wipe;
-    if (dst.left > 0) {
-      wipe.SetRect(0,0, dst.left, r.bottom);
-     ::FillRect(dc.m_hDC, &wipe, m_backBrush);
-    }
-
-    if (dst.top > 0) {
-      wipe.SetRect(dst.left, 0, dst.right, dst.top);
-     ::FillRect(dc.m_hDC, &wipe, m_backBrush);
-    }
-
-    if (dst.right < r.right) {
-      wipe.SetRect(dst.right, 0, r.right, r.bottom);
-     ::FillRect(dc.m_hDC, &wipe, m_backBrush);
-    }
-
-    if (dst.bottom < r.bottom) {
-      wipe.SetRect(dst.left, dst.bottom, dst.right, r.bottom);
-     ::FillRect(dc.m_hDC, &wipe, m_backBrush);
-    }
-  }
-  memdc.SelectObject( prev );
+		m_imgBk.Stretch(dc.GetSafeHdc(), x, y, w, h);
+	}
+	else
+	{
+		CRect r;
+		GetClientRect(&r);
+		dc.FillSolidRect(&r, RGB(46, 46, 46));
+		r.right = r.left + m_imgBk.GetWidth();
+		r.bottom = r.top + m_imgBk.GetHeight();
+		m_imgBk.Draw(dc.GetSafeHdc(), r);
+	}
 }
-
 
 // ==================================================================
 //  Create
 // ------------------------------------------------------------------
-
 BOOL CWndImage::Create(RECT const & r, CWnd * parent, UINT id, DWORD dwStyle)
 {
   BOOL ok = CWnd::Create(NULL, NULL, dwStyle, r, parent, id, NULL);
   return ok;
 }
 
-
-// ==================================================================
-//  CreateFromStatic
-// ------------------------------------------------------------------
-
-BOOL CWndImage::CreateFromStatic(CWnd * sc)
+BOOL CWndImage::SetImgFile(LPCTSTR fileName)
 {
-    _ASSERTE(!::IsWindow(m_hWnd));          // image control already created
-  if (!sc || !::IsWindow(sc->m_hWnd)) return false;
-  CWnd * dlg = sc->GetParent();
-  if (!dlg || !::IsWindow(dlg->m_hWnd)) return false;
-
-  CRect r;
-  sc->GetWindowRect(&r);
-  dlg->ScreenToClient(&r);
-  CString s;
-  DWORD style   = sc->GetStyle();
-  DWORD exstyle = sc->GetExStyle();
-  sc->GetWindowText(s);
-  UINT dlgID = sc->GetDlgCtrlID();
-
-  HBITMAP bmp = (HBITMAP) sc->SendMessage(STM_GETIMAGE, IMAGE_BITMAP, 0);
-  if (bmp)
-     sc->SendMessage(STM_SETIMAGE, IMAGE_BITMAP, 0);
-
-  sc->DestroyWindow();
-  CreateEx(exstyle, NULL, s,  style, r, dlg, dlgID);
-
-  if (bmp) {
-    SetImg(bmp, false);
-    SetBltMode(bltFitXY);
-  }
-  return true;
+	m_imgBk.Load(fileName, CXIMAGE_FORMAT_JPG);
+	Invalidate();
+	return TRUE;
 }
-
-
-// ==================================================================
-//  SetImage
-// ------------------------------------------------------------------
-
-void CWndImage::SetImg(HBITMAP bmp, bool shared)
-{
-  HGDIOBJ prev = m_bmp.Detach();
-  if ((HBITMAP) prev == bmp) return;
-
-  if (prev && m_shared) DeleteObject(prev);
-
-  m_bmp.Attach(bmp);
-
-  if (bmp != 0) {
-    BITMAP bmp;
-    m_bmp.GetBitmap(&bmp);
-    m_bmpSize.cx = bmp.bmWidth;
-    m_bmpSize.cy = bmp.bmHeight;
-  }
-  else 
-    m_bmpSize = CSize(0,0);
-
-  SetSourceRect();      // use entire new image
-  Recalc();
-  return;
-}
-
-// ==================================================================
-//  SetImage Clones
-// ------------------------------------------------------------------
-
-void CWndImage::SetImg(CBitmap * bmp)
-{
-  SetImg(bmp ? (HBITMAP) (bmp->m_hObject) : 0);
-}
-
-bool CWndImage::SetImg(LPCTSTR resID, HINSTANCE instance)
-{
-  if (!instance) 
-    instance = AfxGetResourceHandle();
-
-  HBITMAP bmp = ::LoadBitmap(instance, resID);
-  SetImg(bmp, false);
-  return bmp != 0;
-}
-
-bool CWndImage::SetImg(UINT resID, HINSTANCE instance)
-{
-  return SetImg(MAKEINTRESOURCE(resID), instance);
-}
-
-
-bool CWndImage::SetImgFile(LPCTSTR fileName)
-{
-  HBITMAP bmp = (HBITMAP) ::LoadImage(NULL, fileName, IMAGE_BITMAP, 0,0, LR_LOADFROMFILE);
-  SetImg(bmp);
-  return bmp != 0;
-}
-
-// ==================================================================
-//  SetBltMode
-// ------------------------------------------------------------------
-
-void CWndImage::SetBltMode(int mode)
-{
-  if (mode <=0 || mode >  blt_MaxMode) mode = bltNormal;
-  if (mode == m_bltMode) return;
-  m_bltMode = mode;
-  Recalc();
-}
-
-// ==================================================================
-//  SetAlign
-// ------------------------------------------------------------------
-
-void CWndImage::SetAlign(int alignX, int alignY)
-{
-  if (alignX < 0 || alignX > blt_MaxAlign || alignX == m_alignX) alignX = 0;
-  if (alignY < 0 || alignY > blt_MaxAlign || alignY == m_alignY) alignY = 0;
-
-  if (alignX == 0 && alignY == 0) return;  // no change
-
-  if (alignX) m_alignX = alignX;
-  if (alignY) m_alignY = alignY;
-  Recalc();
-}
-
-// ==================================================================
-//  SetSourceRect
-// ------------------------------------------------------------------
-
-void CWndImage::SetSourceRect(RECT const & r)
-{
-  CRect bmpRect(0,0, m_bmpSize.cx, m_bmpSize.cy);
-  m_srcRect.IntersectRect(&r, &bmpRect);
-  Recalc();
-}
-
-// ==================================================================
-//  SetSourceRect
-// ------------------------------------------------------------------
-
-void CWndImage::SetSourceRect()
-{
-  m_srcRect.SetRect(0,0, m_bmpSize.cx, m_bmpSize.cy);
-  Recalc();
-}
-
-
-// ==================================================================
-//  Recalc
-// ------------------------------------------------------------------
-
-void CWndImage::Recalc(bool invalidate)
-{
-  if (!::IsWindow(m_hWnd)) return;
-
-  CRect & src = m_srcRect;
-  CRect & dst = m_dstRect;
-  CRect r;
-
-  GetClientRect(&r);
-  CSize wndSize = r.Size();
-
-  if (wndSize.cx == 0 || wndSize.cy == 0 || src.IsRectEmpty()) 
-    dst.SetRectEmpty();
-  else {
-
-    dst.left = dst.top = 0;
-    switch (m_bltMode) 
-    {
-      default           :
-      case bltNormal    :  dst.right = src.Width(); dst.bottom = src.Height(); break;
-      case bltStretch   :  dst.right = wndSize.cx; dst.bottom = wndSize.cy; break;
-      case bltCustom    :  dst.right  = (int)(src.Width() * m_zoomX);
-                           dst.bottom = (int)(src.Height() * m_zoomY);
-                           break;
-
-      case bltFitX      :
-      case bltFitY      :
-      case bltFitXY     :
-      case bltFitSm     : {
-                            double zoom = 1;
-                            double zoomX = ((double) wndSize.cx) / src.Width();
-                            double zoomY = ((double) wndSize.cy) / src.Height();
-
-                            if (m_bltMode == bltFitX) zoom = zoomX;
-                            else if (m_bltMode == bltFitY) zoom = zoomY;
-                            else    // for stretchXY take smaller, for stretchSm take larger:
-                              zoom = ((m_bltMode == bltFitXY) ^ (zoomX > zoomY)) ? 
-                                                zoomX : zoomY;  
-
-                            m_zoomX = m_zoomY = zoom;       // so user can query these values
-
-                            dst.right  = (int)(src.Width() * zoom);
-                            dst.bottom = (int)(src.Height() * zoom);
-                            break;
-                        }
-      case bltTile      :   break;
-
-    }
-
-    switch (m_alignX) 
-    {
-      case bltCenter :  m_origin.x = (wndSize.cx-dst.Width()) / 2; break;
-      case bltRight  :  m_origin.x =  wndSize.cx-dst.Width();      break;
-      case bltLeft   :  m_origin.x =  0;      break;
-    }
-    dst.left += m_origin.x;
-    dst.right += m_origin.x;
-
-    switch (m_alignY) 
-    {
-      case bltCenter :  m_origin.y = (wndSize.cy-dst.Height()) / 2; break;
-      case bltRight  :  m_origin.y =  wndSize.cy-dst.Height();      break;
-      case bltTop    :  m_origin.y = 0; break;
-    }
-    dst.top += m_origin.y;
-    dst.bottom += m_origin.y;
-  }
-
-  if (m_bltMode == bltTile) {
-    dst.SetRect(0,0, wndSize.cx, wndSize.cy);
-  }
-
-  if (invalidate)
-      Invalidate();
-
-}
-
 
 void CWndImage::OnSize(UINT nType, int cx, int cy) 
 {
 	CWnd::OnSize(nType, cx, cy);
-    Recalc();
+	Invalidate();
 }
 
-// ==================================================================
-//  SetZoom, origin
-// ------------------------------------------------------------------
-
-void CWndImage::SetZoom(double zoomX, double zoomY)
+void CWndImage::GetImageXY(CxImage * ima, long * x, long * y)
 {
-  m_zoomX = zoomX;
-  m_zoomY = zoomY;
-  m_bltMode = bltCustom;
-  Recalc();
+	if (ima == NULL)
+		return;
+
+	CPoint point = CPoint(0, 0);
+	float fx = (float)(*x + point.x);
+	float fy = (float)(*y + point.y);
+
+	if (m_bltMode == bltStretch)
+	{
+		CRect rect;
+		GetClientRect(&rect);
+		int width = rect.right - rect.left;
+		int height = rect.bottom - rect.top;
+		fx *= ima->GetWidth() / (float)width;
+		fy *= ima->GetHeight() / (float)height;
+	}
+
+	*x = (long)fx;
+	*y = (long)fy;
 }
 
-void CWndImage::SetZoom(double zoom)
+BOOL CWndImage::SetImageRectSelection(CRect *rect)
 {
-  SetZoom(zoom, zoom);
+	CxImage* ima = GetImage();
+	if (ima == NULL)
+		return FALSE;
+
+	long x, y;
+	RECT rect_img;
+	x = rect_img.left = rect->left;
+	y = rect_img.top = rect->top;
+	GetImageXY(ima, &x, &y);
+	rect_img.top = ima->GetHeight() - 1 - y;
+	rect_img.left = x;
+
+	x = rect_img.right = rect->right;
+	y = rect_img.bottom = rect->bottom;
+	GetImageXY(ima, &x, &y);
+	rect_img.bottom = ima->GetHeight() - 1 - y;
+	rect_img.right = x;
+
+	ima->SelectionClear();
+	ima->SelectionAddRect(rect_img);
+
+	return TRUE;
 }
 
-void CWndImage::SetOrigin(int origX, int origY)
+void CWndImage::OnLButtonDown(UINT nFlags, CPoint point)
 {
-  SetOriginX(origX);
-  SetOriginY(origY);
+	if (m_tracker.HitTest(point) < 0)
+	{
+		CRectTracker track;
+		if (track.TrackRubberBand(this, point, true)) {
+			track.m_rect.NormalizeRect();
+			m_tracker.m_rect = track.m_rect;
+			SetImageRectSelection(&m_tracker.m_rect);
+			SendMessage(WM_USER_LBUTTONTRACK);
+		}
+		else {
+			m_tracker.m_rect = CRect(0, 0, 0, 0);
+		}
+	}
+	else {
+		if (m_tracker.Track(this, point, true)) {
+			m_tracker.m_rect.NormalizeRect();
+			SetImageRectSelection(&m_tracker.m_rect);
+			SendMessage(WM_USER_LBUTTONTRACK);
+		}
+		else {
+			m_tracker.m_rect = CRect(0, 0, 0, 0);
+		}
+	}
+
+	CWnd::OnLButtonDown(nFlags, point);
 }
 
-void CWndImage::SetOriginX(int origX)
+void CWndImage::OnLButtonUp(UINT nFlags, CPoint point)
 {
-  m_origin.x = origX; 
-  m_alignX = bltCustom;
-  Recalc();
+	CWnd::OnLButtonUp(nFlags, point);
 }
 
-void CWndImage::SetOriginY(int origY)
+BOOL CWndImage::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
-  m_origin.y = origY;
-  m_alignY = bltCustom;
-  Recalc();
+	if (m_tracker.SetCursor(this, nHitTest))
+		return TRUE;
 
+	return CWnd::OnSetCursor(pWnd, nHitTest, message);
 }
 
-// ==================================================================
-//  GetBitmap
-// ------------------------------------------------------------------
-
-HBITMAP CWndImage::GetBitmap(bool detach)
+BOOL CWndImage::IsStretcDrawRect(CxImage& img)
 {
-  HBITMAP ret = (HBITMAP) m_bmp.m_hObject;
-  if (detach) {
-    m_shared = true;
-    SetImg((HBITMAP)0);
-  }
-  return ret;
+	CRect rtImg;
+	GetClientRect(&rtImg);
+
+	int w1 = img.GetWidth();
+	int h1 = img.GetHeight();
+	int w2 = rtImg.Width();
+	int h2 = rtImg.Height();
+
+	if (w1 > w2 || h1 > h2)
+		return TRUE;
+
+	return FALSE;
 }
 
-// ==================================================================
-//  SetbackBrush
-// ------------------------------------------------------------------
-
-void CWndImage::SetBackgroundBrush(int sysColorIndex)
+LRESULT CWndImage::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
-  if (sysColorIndex == 0)
-    m_backBrush = (HBRUSH) ::GetStockObject(HOLLOW_BRUSH);
-  else
-    m_backBrush = (HBRUSH) (sysColorIndex+1);
-  Invalidate();
+	if (message == WM_NCHITTEST || message == WM_NCLBUTTONDOWN || message == WM_NCLBUTTONDBLCLK)
+		return ::DefWindowProc(m_hWnd, message, wParam, lParam);
+
+	if (message == WM_USER_LBUTTONTRACK)
+	{
+		if (m_nDrawMode == DRAWCROP)
+		{
+			RECT rt;
+			m_imgBk.SelectionGetBox(rt);
+			rt.bottom = m_imgBk.GetHeight() - 1 - rt.bottom;
+			rt.top = m_imgBk.GetHeight() - 1 - rt.top;
+			m_imgBk.Crop(rt);
+
+			m_tracker.m_rect = CRect(0, 0, 0, 0);
+
+			if (IsStretcDrawRect(m_imgBk))
+				SetBltMode(bltStretch);
+			else
+				SetBltMode(bltBlt);
+		}
+		else if (m_nDrawMode == DRAWBLUR)
+		{
+			RECT rt;
+			m_imgBk.SelectionGetBox(rt);
+			rt.bottom = m_imgBk.GetHeight() - rt.bottom;
+			rt.top = m_imgBk.GetHeight() - rt.top;
+
+			m_tracker.m_rect = CRect(0, 0, 0, 0);
+
+			int32_t kernel[] = { 1,1,1,1,1,1,1,1,1 };
+			for (int i = 0; i < 10; i++)
+				m_imgBk.Filter(kernel, 3, 9, 0);
+			
+			if (IsStretcDrawRect(m_imgBk))
+				SetBltMode(bltStretch);
+			else
+				SetBltMode(bltBlt);
+		}
+
+		Invalidate();
+		return TRUE;
+	}
+
+	return CWnd::WindowProc(message, wParam, lParam);
 }
-
-void CWndImage::SetBackgroundBrush(CBrush & brush)
-{
-  m_backBrush = (HBRUSH) brush.m_hObject;
-  Invalidate();
-}
-
-void CWndImage::SetBackgroundBrush(HBRUSH brush)
-{
-  m_backBrush = brush;
-  Invalidate();
-}
-
-
-

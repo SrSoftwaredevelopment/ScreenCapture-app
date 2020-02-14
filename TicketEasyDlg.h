@@ -6,12 +6,11 @@
 
 #include "BPCtrlAnchorMap.h"
 #include "SystemTray.h"
-#include "ximage.h"
-#include "DimEditCtrl.h"
+#include "PromptEdit.h"
 #include "xSkinButton.h"
 #include "TicketHook.h"
 #include "TransparentStatic.h"
-#include "WndImage.h"
+#include "DlgThumb.h"
 #include <vector>
 
 using namespace std;
@@ -22,7 +21,7 @@ using namespace std;
 #define  CAPTURECOUNT			5
 
 
-typedef struct tARROWSTRUCT {
+typedef struct tagARROWSTRUCT {
 	int nWidth;		// width (in pixels) of the full base of the arrowhead
 	float fTheta;	// angle (in radians) at the arrow tip between the two
 					//  sides of the arrowhead
@@ -49,24 +48,21 @@ public:
 	CxSkinButton		m_btnClose;
 	CxSkinButton		m_btnSubmit;
 
-	CDimEditCtrl		m_edtTitle;
-	CDimEditCtrl		m_edtCont;
+	CPromptEdit			m_edtTitle;
+	CPromptEdit			m_edtCont;
 
-	CTransparentStatic	m_lblStart;
-	CTransparentStatic	m_lblEnd;
-
-	CWndImage 	 		m_imgPanel[CAPTURECOUNT];
+	CDlgThumb 	 		m_imgPanel[CAPTURECOUNT];
 
 	CxImage				m_imgCapt;
 	CxImage				m_imgBk;
 	CxImage				m_imgLogo;
-	CxImage				m_imgButtons[4];
+	CxImage				m_imgButtons[2];
 
 // Implementation
 protected:
 	HICON				m_hIcon;
 	CSystemTray			m_TrayIcon;
-	TicketHook			m_hook;
+	CTicketHook			m_hook;
 
 	CFont				m_bigFont;
 	CFont				m_midFont;
@@ -75,10 +71,14 @@ protected:
 	int					m_nX;
 	int					m_nY;
 
+	DWORD				m_dwProcId;
+
 	vector<LONG>		m_vCaptures;
 
-protected:
+public:
 	void				ArrangeScreenshots();
+
+protected:
 	void				ArrowTo(CDC * pDC, int x, int y, ARROWSTRUCT *pArrow);
 	void				ArrowTo(CDC * pDC, const POINT *lpTo, ARROWSTRUCT *pArrow);
 	void				DoScreenCapture();
@@ -99,11 +99,14 @@ protected:
 	afx_msg void		OnBnClickedButtonSubmit();
 	afx_msg void		OnDestroy();
 	afx_msg void		OnGetMinMaxInfo(MINMAXINFO* lpMMI);
+	afx_msg void		OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void		OnPopupExit();
 	afx_msg void		OnPopupShowwindow();
 	afx_msg void		OnPaint();
 	afx_msg void		OnSize(UINT nType, int cx, int cy);
 	afx_msg void		OnSysCommand(UINT nID, LPARAM lParam);
+	afx_msg BOOL		OnEraseBkgnd(CDC* pDC);
+	afx_msg BOOL		OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 	afx_msg HBRUSH		OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	afx_msg HCURSOR		OnQueryDragIcon();
 

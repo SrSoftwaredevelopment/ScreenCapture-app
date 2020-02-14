@@ -51,7 +51,10 @@ BOOL CTicketEasyApp::InitInstance()
 	CWinApp::InitInstance();
 
 	if (IsTwiceInstance())
+	{
+		MyMessageBox("The application is already running!", MBOK);
 		return FALSE;
+	}
 
 	AfxEnableControlContainer();
 
@@ -63,6 +66,9 @@ BOOL CTicketEasyApp::InitInstance()
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization
 	SetRegistryKey(_T("TicketEasy"));
+
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	Gdiplus::GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, NULL);
 
 	TCHAR szMod[MAX_PATH];
 	memset(szMod, 0, MAX_PATH);
@@ -77,13 +83,16 @@ BOOL CTicketEasyApp::InitInstance()
 
 	char *usrPath;
 	size_t len;
-	_dupenv_s(&usrPath, &len, "APPDATA");
+	_dupenv_s(&usrPath, &len, "LOCALAPPDATA");
 
-	CreateCaptureDirectory(usrPath);
+	//C:\Users\USERNAME\AppData\Local\TicketEasy\temp
+	m_strUsrDir.Format("%s\\TicketEasy\\temp", usrPath);
+	CreateCaptureDirectory((LPTSTR)(LPCTSTR)m_strUsrDir);
 
 	CFrameWnd * pFrame = new CFrameWnd();
 	pFrame->Create(0, 0, WS_OVERLAPPEDWINDOW);
-#ifdef _DEBUGX
+
+#ifdef MODAL
 	CTicketEasyDlg dlg;
 #else
 	CTicketEasyDlg dlg(pFrame);
@@ -120,6 +129,8 @@ int CTicketEasyApp::ExitInstance()
 		CloseHandle(m_hMutex);
 	}
 
+	Gdiplus::GdiplusShutdown(m_gdiplusToken);
+
 	return CWinApp::ExitInstance();
 }
 
@@ -136,14 +147,21 @@ BOOL CTicketEasyApp::IsTwiceInstance()
 
 void CTicketEasyApp::CreateCaptureDirectory(char * usrPath)
 {
-	m_strUsrDir.Format("%s\\TicketEasy\\*.*", usrPath);
+	char DirName[256];
+	char* p = usrPath;
+	char* q = DirName;
 
-	CFileFind finder;
-	BOOL bFound = finder.FindFile((LPCTSTR)m_strUsrDir);
-	m_strUsrDir.Format("%s\\TicketEasy", usrPath);
-
-	if (bFound)
-		return;
-
-	CreateDirectory((LPCTSTR)m_strUsrDir, NULL);
+	while (*p)
+	{
+		if (('\\' == *p) || ('/' == *p))
+		{
+			if (':' != *(p - 1))
+			{
+				CreateDirectory(DirName, NULL);
+			}
+		}
+		*q++ = *p++;
+		*q = '\0';
+	}
+	CreateDirectory(DirName, NULL);
 }

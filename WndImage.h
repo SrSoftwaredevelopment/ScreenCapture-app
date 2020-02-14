@@ -25,27 +25,26 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-enum __bltmodes
-{
-	bltCustom = 1,      // custom source, zoom
-	bltNormal = 2,      // left upper corner
-	bltStretch = 3,      // blit stretched to fit entire frame
-	bltFitX = 4,      // stretch to fit X coordinate
-	bltFitY = 5,      // stretch to fit Y cooddinate
-	bltFitXY = 6,      // stretch to fit, but keep aspect ratio
-	bltFitSm = 7,      // stretch to fit smaller (larger clipped, keeps a/r)    
-	bltTile = 8,      // blit tiled (origin included)
-	blt_MaxMode = 8,      // blit tiled (origin included)
+#include "ximage.h"
+#include "MyTracker.h"
 
-	bltNoModify = 0,      // pass a 0 param to not modify current setting
-	//      bltCustom     =       1,      // custom alignment
-	bltLeft = 2,      // align to left/top
-	bltTop = 2,
-	bltCenter = 3,      // align to center
-	bltRight = 4,      // align to right / bottom
-	bltBottom = 4,
-	blt_MaxAlign = 4,
+enum bltmodes
+{
+	bltBlt,
+	bltStretch,      // blit stretched to fit entire frame
+	bltCenter,       // align to center
 };
+
+enum DrawMode
+{
+	DRAWUNDO,
+	DRAWCROP,
+	DRAWBLUR,
+};
+
+#define WM_USER_LBUTTONTRACK	WM_USER + 0x2100
+#define WM_USER_IMAGECROP		WM_USER + 0x2101
+#define WM_USER_IMAGEBLUR		WM_USER + 0x2102
 
 // ==================================================================
 //  CWndImage
@@ -53,84 +52,42 @@ enum __bltmodes
 
 class CWndImage : public CWnd
 {
-  public:
+public:
+	CWndImage();
 	virtual    ~CWndImage();
-	            CWndImage();
 
-    BOOL        Create(RECT const & r, CWnd * parent, UINT id, 
-                       DWORD dwStyle = WS_CHILD | WS_VISIBLE);
+	BOOL			Create(RECT const & r, CWnd * parent, UINT id, DWORD dwStyle = WS_CHILD | WS_VISIBLE);
+	BOOL			SetImgFile(LPCTSTR fileName);
 
-	BOOL        CreateFromStatic(CWnd * st);
+	void			SetBltMode(int nMode) { m_bltMode = nMode; }
+	void			SetDrawMode(int nDraw) { m_nDrawMode = nDraw; }
 
-    void        SetBltMode(int mode);  
-    void        SetAlign(int alignX, int alignY); // pass zero to keep value
-    void        SetSourceRect(RECT const & r);  
-    void        SetSourceRect();                        // use entire image
-
-    void        SetZoom(double zoomX, double zoomY);        
-    void        SetZoom(double zoom);                       // zoomx=zoomy
-
-    void        SetOrigin(int origX, int origY);
-    void        SetOriginX(int origX);
-    void        SetOriginY(int origY);
-
-    void        SetImg(HBITMAP bmp, bool shared = false);
-    void        SetImg(CBitmap * bmp);
-    bool        SetImg(LPCTSTR resID, HINSTANCE instance = 0);
-    bool        SetImg(UINT resID, HINSTANCE instance = 0);
-    bool        SetImgFile(LPCTSTR fileName);
-
-    void        SetBackgroundBrush(int sysColorIndex);
-    void        SetBackgroundBrush(CBrush & brush);
-    void        SetBackgroundBrush(HBRUSH brush);
-
-    int         GetImgSizeX() const      { return m_bmpSize.cx;  }
-    int         GetImgSizeY() const      { return m_bmpSize.cy;  }
-    int         GetBltMode()  const      { return m_bltMode;     }
-    double      GetZoomX()    const      { return m_zoomX;       }
-    double      GetZoomY()    const      { return m_zoomY;       }
-    int         GetAlignX()   const      { return m_alignX;      }
-    int         GetAlignY()   const      { return m_alignY;      }
-    int         GetOriginX()  const      { return m_origin.x;    }
-    int         GetOriginY()  const      { return m_origin.y;    }
-    HBITMAP     GetBitmap(bool detach = false);
-
-
-  protected:
-
-    void        Recalc(bool invalidateWnd = true);
-
-
-    CBitmap     m_bmp;              // the bitmap we wanna blit
-    HBRUSH      m_backBrush;        // background brush
-    CSize       m_bmpSize;          // size of the bitmap
-    bool        m_shared;           // the bitmap is shared (don't delete upon destruction/replacement)
-
-    // paint style:
-    int         m_bltMode;          // blit mode
-    int         m_alignX;           // y alignment
-    int         m_alignY;           // y alignment
-
-    CRect       m_srcRect;          // source 'window' rect (as selected by user)
-
-    // custom parameters
-    double      m_zoomX;            // custom X zoom factor
-    double      m_zoomY;            // custom Y zoom factor
-    CPoint      m_origin;           // custom origin (in WndImage coordinates, may be  <0
-
-
-        // internal vars - for "quick" recalc & change
-    CRect       m_dstRect;          // true destination rect
-
-
-	//{{AFX_VIRTUAL(CWndImage)
-	//}}AFX_VIRTUAL
+	CxImage *		GetImage() { return &m_imgBk; }
 
 protected:
+	void			GetImageXY(CxImage * ima, long * x, long * y);
+
+	BOOL			IsStretcDrawRect(CxImage& img);
+	BOOL			SetImageRectSelection(CRect *rect);
+
+protected:
+	CxImage			m_imgBk;
+	CMyTracker		m_tracker;
+
+	int				m_bltMode;
+	int				m_nDrawMode;
+
+protected:
+	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
+
 	//{{AFX_MSG(CWndImage)
-	afx_msg void OnPaint();
-	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void	OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void	OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void	OnPaint();
+	afx_msg void	OnSize(UINT nType, int cx, int cy);
+	afx_msg BOOL	OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 	//}}AFX_MSG
+
 	DECLARE_MESSAGE_MAP()
 };
 

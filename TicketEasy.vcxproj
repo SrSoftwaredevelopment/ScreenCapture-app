@@ -115,7 +115,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;_DEBUG;MODAL_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>./include</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -197,9 +197,15 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DimEditCtrl.h" />
+    <ClInclude Include="CDialogSK.h" />
+    <ClInclude Include="DlgImgEdit.h" />
+    <ClInclude Include="DlgMsg.h" />
+    <ClInclude Include="DlgThumb.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="GdipButton.h" />
+    <ClInclude Include="MyTracker.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PromptEdit.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SystemTray.h" />
     <ClInclude Include="targetver.h" />
@@ -211,13 +217,19 @@
     <ClInclude Include="xSkinButton.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DimEditCtrl.cpp" />
+    <ClCompile Include="CDialogSK.cpp" />
+    <ClCompile Include="DlgImgEdit.cpp" />
+    <ClCompile Include="DlgMsg.cpp" />
+    <ClCompile Include="DlgThumb.cpp" />
+    <ClCompile Include="GdipButton.cpp" />
+    <ClCompile Include="MyTracker.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="PromptEdit.cpp" />
     <ClCompile Include="SystemTray.cpp" />
     <ClCompile Include="TicketEasy.cpp" />
     <ClCompile Include="TicketEasyDlg.cpp" />
@@ -230,13 +242,25 @@
     <ResourceCompile Include="TicketEasy.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="res\aero_link_im.cur" />
     <None Include="res\TicketEasy.rc2" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\bitmap_c.bmp" />
+    <Image Include="res\bitmap_h.bmp" />
+    <Image Include="res\bitmap_n.bmp" />
+    <Image Include="res\blur.png" />
+    <Image Include="res\blurHover.png" />
     <Image Include="res\btn_hover.bmp" />
     <Image Include="res\btn_normal.bmp" />
+    <Image Include="res\crop.png" />
+    <Image Include="res\cropHover.png" />
+    <Image Include="res\exit.png" />
     <Image Include="res\exit_hover.bmp" />
+    <Image Include="res\exit_hover.png" />
+    <Image Include="res\help.png" />
+    <Image Include="res\help_hover.png" />
+    <Image Include="res\msgbk.bmp" />
     <Image Include="res\TicketEasy.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

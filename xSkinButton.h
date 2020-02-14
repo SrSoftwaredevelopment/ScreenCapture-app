@@ -55,11 +55,12 @@ public:
 	void SetIcon(HICON hIcon1, HICON hIcon2) { m_hIcon1 = hIcon1; m_hIcon2 = hIcon2; }
 	void SetToolTipText(CString s);
 	COLORREF SetTextColor(COLORREF new_color);
-	void SetSkin(UINT normal,UINT down, UINT over=0, UINT disabled=0, UINT focus=0,UINT mask=0,	short drawmode=1,short border=1,short margin=4);
+	void SetSkin(UINT normal,UINT down, UINT over=0, UINT disabled=0, UINT focus=0,UINT mask=0,	short drawmode=1,short border=1,short margin=4, bool bReverse = false);
 	void SetSkin(HBITMAP normal, HBITMAP down, HBITMAP over = 0, UINT disabled = 0, UINT focus = 0, UINT mask = 0, short drawmode = 1, short border = 1, short margin = 4);
 	virtual ~CxSkinButton();
 	// Generated message map functions
 protected:
+	bool	m_bReverseColor;
 	bool	m_Checked;					//radio & check buttons
 	DWORD	m_Style;					//radio & check buttons
     bool m_tracking;

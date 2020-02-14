@@ -9,7 +9,7 @@
 #endif
 
 #include "resource.h"		// main symbols
-
+#include "DlgMsg.h"
 
 // CTicketEasyApp:
 // See TicketEasy.cpp for the implementation of this class
@@ -31,6 +31,8 @@ public:
 
 	CString			m_strAppDir;
 	CString			m_strUsrDir;
+
+	ULONG_PTR		m_gdiplusToken;
 
 protected:
 	HANDLE			m_hMutex;
